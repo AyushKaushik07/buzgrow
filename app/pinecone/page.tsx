@@ -6,13 +6,22 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Database, MoveUp, RefreshCcw } from 'lucide-react';
+import { Database, LucideLoader2, MoveUp, RefreshCcw } from 'lucide-react';
 
 type Props = {}
 
 const VectorDBPage = (props: Props) => {
   const [isUploading, setIsUploading] = useState(false);
-
+  const [indexname, setIndexname] = useState("");
+  const [namespace, setNamespace] = useState("");
+  const onStartUpload = async () => {
+    const response = await fetch('api/updatedatabase', { method: 'POST', body: JSON.stringify({
+        indexname,
+        namespace
+    })})
+    console.log(response);
+    // await progressStreamedProgress(response);
+  }
   return (
     <main className="flex flex-col items-center p-24">
       <Card>
@@ -50,6 +59,7 @@ const VectorDBPage = (props: Props) => {
                 <div className="grid gap-2">
                   <Label>Index Name</Label>
                   <Input
+                    value={indexname} onChange={e => setIndexname(e.target.value)}
                     placeholder="Enter index name"
                     disabled={isUploading}
                     className="disabled:cursor-default"
@@ -58,6 +68,7 @@ const VectorDBPage = (props: Props) => {
                 <div className="grid gap-2">
                   <Label>Namespace</Label>
                   <Input
+                    value={namespace} onChange={e => setNamespace(e.target.value)}
                     placeholder="Enter namespace"
                     disabled={isUploading}
                     className="disabled:cursor-default"
@@ -68,6 +79,7 @@ const VectorDBPage = (props: Props) => {
 
             {/* Right Section */}
             <Button
+              onClick={onStartUpload}
               variant="outline"
               className="w-full h-full"
               disabled={isUploading}
@@ -78,6 +90,13 @@ const VectorDBPage = (props: Props) => {
               </span>
             </Button>
           </div>
+          {isUploading && <div className='mt-4'>
+            <label>File Name:</label>
+            <div className='flex flex-row items-center gap-4'>
+                <progress value={80}/>
+                <LucideLoader2 className='stroke-[#D90013] animate-spin'/>
+            </div>
+          </div>}
         </CardContent>
       </Card>
     </main>
