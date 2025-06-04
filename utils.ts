@@ -40,4 +40,4 @@ function processDocument(
 ): void {
   console.log('Processing document:', doc);
   // Add processing logic here
-}
+
