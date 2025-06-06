@@ -7,8 +7,22 @@ import { NextApiRequest, NextApiResponse } from "next";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
     if (req.method === 'POST') {
-        const { indexname, namespace } = req.body; // req.body is already parsed
-        await handleUpload(indexname, namespace, res);
+        try {
+            const { indexname, namespace } = req.body;
+
+            if (!indexname || typeof indexname !== 'string') {
+                return res.status(400).json({ message: "Index name is required and must be a non-empty string." });
+            }
+
+            if (!namespace || typeof namespace !== 'string') {
+                return res.status(400).json({ message: "Namespace is required and must be a non-empty string." });
+            }
+
+            await handleUpload(indexname, namespace, res);
+        } catch (error) {
+            console.error("Error parsing request or uploading:", error);
+            res.status(500).json({ message: "Internal Server Error" });
+        }
     } else {
         res.status(405).json({ message: "Method Not Allowed" });
     }
@@ -16,16 +30,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
 async function handleUpload(indexname: string, namespace: string, res: NextApiResponse) {
     const loader = new DirectoryLoader('./documents', {
-        '.pdf': (path: string) => new PDFLoader(path, {
-            splitPages: false
-        }),
-        '.txt': (path: string) => new TextLoader(path)
+        '.pdf': (path: string) => new PDFLoader(path, { splitPages: false }),
+        '.txt': (path: string) => new TextLoader(path),
     });
 
     const docs = await loader.load();
 
     const client = new Pinecone({
-        apiKey: process.env.PINECONE_API_KEY!
+        apiKey: process.env.PINECONE_API_KEY!,
     });
 
     await updateVectorDB({

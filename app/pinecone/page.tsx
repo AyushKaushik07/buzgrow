@@ -14,14 +14,29 @@ const VectorDBPage = (props: Props) => {
   const [isUploading, setIsUploading] = useState(false);
   const [indexname, setIndexname] = useState("");
   const [namespace, setNamespace] = useState("");
+
   const onStartUpload = async () => {
-    const response = await fetch('api/updatedatabase', { method: 'POST', body: JSON.stringify({
-        indexname,
-        namespace
-    })})
-    console.log(response);
-    // await progressStreamedProgress(response);
+    setIsUploading(true);
+    try {
+      const response = await fetch('api/updatedatabase', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          indexname,
+          namespace
+        })
+      });
+
+      console.log(await response.json());
+    } catch (err) {
+      console.error("Upload error:", err);
+    } finally {
+      setIsUploading(false);
+    }
   }
+
   return (
     <main className="flex flex-col items-center p-24">
       <Card>
@@ -32,11 +47,9 @@ const VectorDBPage = (props: Props) => {
 
         <CardContent>
           <div className="grid grid-cols-3 gap-4">
-            
-            {/* Left Section */}
+
             <div className="col-span-2 grid gap-4 border rounded-lg p-6">
-              
-              {/* File List */}
+
               <div className="relative grid gap-2">
                 <Button
                   variant="ghost"
@@ -54,7 +67,6 @@ const VectorDBPage = (props: Props) => {
                 />
               </div>
 
-              {/* Index and Namespace */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
                   <Label>Index Name</Label>
@@ -77,7 +89,6 @@ const VectorDBPage = (props: Props) => {
               </div>
             </div>
 
-            {/* Right Section */}
             <Button
               onClick={onStartUpload}
               variant="outline"
@@ -93,8 +104,8 @@ const VectorDBPage = (props: Props) => {
           {isUploading && <div className='mt-4'>
             <label>File Name:</label>
             <div className='flex flex-row items-center gap-4'>
-                <progress value={80}/>
-                <LucideLoader2 className='stroke-[#D90013] animate-spin'/>
+              <progress value={80} />
+              <LucideLoader2 className='stroke-[#D90013] animate-spin' />
             </div>
           </div>}
         </CardContent>
