@@ -10,9 +10,11 @@
   },
   "dependencies": {
     "@huggingface/transformers": "^3.5.2",
+    "@langchain/core": "^0.3.58",
+    "@langchain/textsplitters": "^0.1.0",
     "@pinecone-database/pinecone": "^6.1.0",
     "@radix-ui/react-label": "^2.1.7",
-    "@radix-ui/react-progress": "^1.1.7",
+    "@radix-ui/react-progress": "^极端的1.1.7",
     "@radix-ui/react-slot": "^1.2.3",
     "@xenova/transformers": "^2.17.2",
     "axios": "^1.9.0",

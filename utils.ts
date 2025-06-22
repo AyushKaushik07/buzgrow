@@ -1,7 +1,7 @@
 import { FeatureExtractionPipeline, pipeline } from "@xenova/transformers";
 import { Pinecone, PineconeRecord, RecordMetadata } from "@pinecone-database/pinecone";
 import { Document } from "langchain/document";
-import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
+import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 import { batchsize } from "./config";
 
 export async function updateVectorDB(params: {
@@ -31,8 +31,20 @@ export async function updateVectorDB(params: {
     );
   }
 
-  // Final completion callback
   progressCallback("", 0, 0, true);
+}
+
+// Optimized chunking with semantic boundaries and overlap
+async function createOptimizedChunks(text: string): Promise<string[]> {
+  const splitter = new RecursiveCharacterTextSplitter({
+    chunkSize: 1000,
+    chunkOverlap: 200,
+    separators: [
+      "\n\n", "\n", ". ", "! ", "? ", "; ", ", ", " ", ""
+    ],
+  });
+  
+  return await splitter.splitText(text);
 }
 
 async function processDocument(
@@ -43,13 +55,12 @@ async function processDocument(
   extractor: FeatureExtractionPipeline,
   progressCallback: (filename: string, totalChunks: number, chunksUpserted: number, iscomplete: boolean) => void
 ): Promise<void> {
-  const splitter = new RecursiveCharacterTextSplitter();
-  const documentChunks = await splitter.splitText(doc.pageContent);
+  const documentChunks = await createOptimizedChunks(doc.pageContent);
   const totalChunks = documentChunks.length;
   let chunksUpserted = 0;
   const filename = getFilename(doc.metadata.source);
 
-  console.log(`Processing ${filename} with ${totalChunks} chunks`);
+  console.log(`Processing ${filename} with ${totalChunks} optimized chunks`);
   
   while (documentChunks.length > 0) {
     const chunkBatch = documentChunks.splice(0, batchsize);
@@ -64,17 +75,14 @@ async function processDocument(
       chunksUpserted,
       progressCallback
     );
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise(resolve => setTimeout(resolve, 300));
   }
 }
 
 function getFilename(path: string): string {
-  // Handle both Windows (\) and Unix (/) path separators
-  const windowsPath = path.includes('\\');
-  const separator = windowsPath ? '\\' : '/';
+  const separator = path.includes('\\') ? '\\' : '/';
   const docname = path.substring(path.lastIndexOf(separator) + 1);
-  const nameWithoutExt = docname.substring(0, docname.lastIndexOf("."));
-  return nameWithoutExt || docname;
+  return docname.substring(0, docname.lastIndexOf(".")) || docname;
 }
 
 async function processOneBatch(
@@ -88,16 +96,30 @@ async function processOneBatch(
   currentUpserted: number,
   progressCallback: (filename: string, totalChunks: number, chunksUpserted: number, iscomplete: boolean) => void
 ): Promise<number> {
-  const output = await extractor(chunkBatch.map(str => str.replace(/\n/g, ' ')), { pooling: 'cls' });
+  const processedChunks = chunkBatch.map(chunk => 
+    chunk.replace(/\s+/g, ' ').trim()
+  );
+  
+  const output = await extractor(processedChunks, { pooling: 'cls' });
   const embeddingsBatch = Array.isArray(output) ? output : output.tolist();
 
-  const vectorBatch = chunkBatch.map((chunk, i) => ({
-    id: `diagnostictests-2-${chunkBatch.length}-${(i + 1) * 10}-false`,
-    values: embeddingsBatch[i],
-    metadata: { chunk }
-  }));
+  const vectorBatch = chunkBatch.map((chunk, i) => {
+    const chunkNumber = currentUpserted + i + 1;
+    const uniqueID = `${filename}-chunk-${String(chunkNumber).padStart(4, '0')}`;
+    
+    return {
+      id: uniqueID,
+      values: embeddingsBatch[i],
+      metadata: { 
+        text: chunk,
+        filename,
+        chunkNumber,
+        totalChunks,
+        chunkSize: chunk.length
+      }
+    } as PineconeRecord<RecordMetadata>;
+  });
 
-  // Validate payload size
   const payloadSize = Buffer.byteLength(JSON.stringify(vectorBatch));
   if (payloadSize > 2 * 1024 * 1024) {
     throw new Error(`Batch size ${(payloadSize/1024/1024).toFixed(2)}MB exceeds 2MB limit`);
@@ -115,7 +137,7 @@ async function processOneBatch(
     } catch (error) {
       if (attempt === maxRetries) throw error;
       console.log(`Retrying upsert (attempt ${attempt})`);
-      await new Promise(resolve => setTimeout(resolve, 2000 * attempt));
+      await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
     }
   }
   return 0;

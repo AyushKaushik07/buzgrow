@@ -124,7 +124,7 @@ const VectorDBPage = () => {
         <CardHeader>
           <CardTitle className="text-2xl">Update Knowledge Base</CardTitle>
           <CardDescription className="text-base">
-            Add new documents to your vector DB
+            Add new documents to your vector DB with optimized chunking
           </CardDescription>
         </CardHeader>
 
@@ -144,7 +144,7 @@ const VectorDBPage = () => {
                     <Label className="text-base">Files List:</Label>
                     <Textarea
                       readOnly
-                      placeholder="Files from ./documents folder will be processed..."
+                      placeholder="Files from ./documents folder will be processed with optimized chunking..."
                       className="min-h-[120px] text-base p-4"
                       value={fileList.join('\n')}
                     />
@@ -152,7 +152,7 @@ const VectorDBPage = () => {
                 </div>
                 
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
+                  <div className="space-y极端的2">
                     <Label className="text-base">Index Name</Label>
                     <Input
                       value={indexname}
@@ -195,7 +195,7 @@ const VectorDBPage = () => {
           {isUploading && (
             <div className="mt-6 space-y-3">
               <div className="text-base font-medium">
-                File Name: {filename} [{currentChunks}/{totalChunks}]
+                File: {filename} [{currentChunks}/{totalChunks} chunks]
               </div>
               <div className="flex items-center gap-4">
                 <div className="flex-1 bg-gray-200 rounded-full h-4 overflow-hidden">
@@ -207,7 +207,7 @@ const VectorDBPage = () => {
                 <LucideLoader2 className="h-5 w-5 stroke-[#D90013] animate-spin flex-shrink-0" />
               </div>
               <div className="text-sm text-gray-600">
-                Progress: {progress.toFixed(1)}%
+                Progress: {progress.toFixed(1)}% | Optimized chunking for better performance
               </div>
             </div>
           )}

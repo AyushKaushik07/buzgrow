@@ -1,5 +1,3 @@
-// app/api/updatedatabase/route.ts
-
 import { updateVectorDB } from "@/utils";
 import { Pinecone } from "@pinecone-database/pinecone";
 import { DirectoryLoader } from "langchain/document_loaders/fs/directory";
@@ -43,7 +41,6 @@ export async function POST(request: NextRequest) {
 
         const docs = await loader.load();
 
-        // Send file list as first message
         const fileList = docs.map(doc => getFilename(doc.metadata.source));
         controller.enqueue(encoder.encode(JSON.stringify({ fileList }) + '\n'));
 

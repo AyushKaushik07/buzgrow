@@ -1,1 +1,1 @@
-export const batchsize = 10
+export const batchsize = 100; // Adjust batch size as needed
