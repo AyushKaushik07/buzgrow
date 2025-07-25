@@ -119,4 +119,4 @@ async function processOneBatch(
     }
   }
   return 0;
-}
+}.
